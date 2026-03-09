@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arcana Mystery Analyzer</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a12;
+            --mystic-purple: #6c5ce7;
+            --neon-gold: #fdcb6e;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(108, 92, 231, 0.3);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: radial-gradient(circle at center, #1e1e2f 0%, #0a0a12 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 8vw, 3rem);
+            color: var(--mystic-purple);
+            text-shadow: 0 0 20px rgba(108, 92, 231, 0.5);
+            margin: 30px 0 10px 0;
+            text-align: center;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            margin-top: 40px;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 0.8rem;
+            color: var(--neon-gold);
+            opacity: 0.8;
+        }
+
+        .input-group {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        input[type="date"], input[type="text"] {
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border);
+            padding: 15px 25px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            width: 100%;
+            max-width: 400px;
+            color: #fff;
+            outline: none;
+            text-align: center;
+        }
+
+        button {
+            margin-top: 15px;
+            background: yellowgreen;
+            border: 1px solid var(--mystic-purple);
+            padding: 15px 45px;
+            color: var(--mystic-purple);
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: 0.4s;
+            border-radius:10px;
+        }
+
+        button:hover {
+            background: var(--mystic-purple);
+            color: #fff;
+            box-shadow: 0 0 30px rgba(108, 92, 231, 0.6);
+            border-radius:10px;
+        }
+
+        .output {
+            margin-top: 25px;
+            width: 95%;
+            max-width: 700px;
+        }
+
+        .meaning-text {
+            display: block;
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .highlight {
+            color: var(--neon-gold);
+            font-weight: 600;
+        }
+
+        .reduction-card {
+            background: var(--glass);
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: left;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reset-btn {
+            background: yellow;
+            border: 1px solid #444;
+            color: #666;
+            margin: 40px 0;
+            padding: 8px 20px;
+            cursor: pointer;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border), transparent);
+            width: 80%;
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>✦ Number Meaning ✦</h1>
+
+    <h2>SELECT YOUR BIRTHDATE:</h2>
+    <div class="input-group">
+        <input id="date" type="date">
+    </div>
+    <button onclick="calculateCalendars()">Show Meaning</button>
+    <div id="calendar-results" class="output"></div>
+
+    <hr>
+
+    <h2>ENTER YOUR FULL NAME:</h2>
+    <div class="input-group">
+        <input type="text" id="inputString" placeholder="Ex: Juan Reyes Dela Cruz Jr.">
+    </div>
+    <button onclick="calculateLetters()">Decrypt Meaning</button>
+    <div id="letter-results" class="output"></div>
+
+    <button class="reset-btn" onclick="fullReset()">Refresh</button>
+
+<script>
+    const START_DATE = new Date('1800-01-17T00:00:00.000Z');
+    
+    const NUM_MEANINGS = {
+        1: "Individualism, independence, and pioneering leadership.",
+        2: "Balance, partnership, sensitivity, and diplomacy.",
+        3: "Self-expression, creativity, joy, and social expansion.",
+        4: "Stability, practicality, hard work, and discipline.",
+        5: "Freedom, adaptability, change, and exploration.",
+        6: "Responsibility, nurturing, family, and service.",
+        7: "Introspection, spirituality, analysis, and truth-seeking.",
+        8: "Material success, authority, power, and karmic manifestation.",
+        9: "Humanitarianism, universal love, completion, and wisdom."
+    };
+
+    const ARCANA_DATA = {
+        1: ["The Magician", "Skill and creation."], 2: ["The High Priestess", "Sacred silence."],
+        3: ["The Empress", "Nurturing abundance."], 4: ["The Emperor", "Solid foundation."],
+        5: ["The Hierophant", "Spiritual meaning."], 6: ["The Lovers", "Harmony and alignment."],
+        7: ["The Chariot", "Willpower and victory."], 8: ["Strength", "Compassionate power."],
+        9: ["The Hermit", "Inner reflection."], 10: ["Wheel of Fortune", "Destiny and cycles."],
+        11: ["Justice", "Universal truth."], 12: ["The Hanged Man", "New perspectives."],
+        13: ["Death", "Deep transformation."], 14: ["Temperance", "Balance and patience."],
+        15: ["The Devil", "Inner shadow work."], 16: ["The Tower", "Sudden awakening."],
+        17: ["The Star", "Hope and celestial guidance."], 18: ["The Moon", "The subconscious abyss."],
+        19: ["The Sun", "Radiant vitality."], 20: ["Judgement", "A call to awaken."],
+        21: ["The World", "Total completion."], 22: ["The Fool", "New beginnings."]
+    };
+
+    function fullReset() {
+        document.getElementById("date").value = "";
+        document.getElementById("inputString").value = "";
+        document.getElementById("calendar-results").innerHTML = "";
+        document.getElementById("letter-results").innerHTML = "";
+    }
+
+    // Standard Numerology Reduction (Used for Month/Day/Year root meanings)
+    function reduceToRoot(n) {
+        if (!n || n === 0) return 0;
+        let val = parseInt(n);
+        while (val > 9) {
+            val = val.toString().split('').reduce((a, b) => parseInt(a) + parseInt(b), 0);
+        }
+        return val;
+    }
+
+    // NEW Linguistic Vibration Reduction Logic
+    function linguisticReduce(num) {
+        let s = num.toString();
+        if (s.length === 3) {
+            // Add first and second digit until it becomes a single digit
+            let sum = parseInt(s[0]) + parseInt(s[1]);
+            while (sum >= 10) {
+                sum = parseInt(sum.toString()[0]) + parseInt(sum.toString()[1]);
+            }
+            return sum;
+        } else if (s.length === 2) {
+            // Print only the first digit
+            return parseInt(s[0]);
+        }
+        return num; // 1 digit remains as is
+    }
+
+    function calculateCalendars() {
+        const dateInput = document.getElementById('date').value;
+        if (!dateInput) return;
+        const date = new Date(dateInput + 'T00:00:00.000Z');
+
+        const daysSinceStart = Math.floor((date - START_DATE) / 86400000);
+        const arcanaDay = (daysSinceStart % 22) + 1;
+        const info = ARCANA_DATA[arcanaDay];
+
+        const gregorianYear = date.getFullYear();
+        const startOfYear = new Date(gregorianYear, 0, 1);
+        const daysSinceStartOfYear = Math.floor((date - startOfYear) / 86400000);
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "Sol"];
+        
+        const monthIdx = Math.floor(daysSinceStartOfYear / 28);
+        const dayNum = (daysSinceStartOfYear % 28) + 1;
+        const yearLastDigit = parseInt(gregorianYear.toString().slice(-1));
+
+        const monthRoot = reduceToRoot(monthIdx + 1);
+        const dayRoot = reduceToRoot(dayNum);
+        const yearRoot = reduceToRoot(yearLastDigit);
+
+        const data = [
+            { label: "Your Life Path ", val: monthRoot },
+            { label: "Your Life Way ", val: dayRoot },
+            { label: "Your Life Destiny ", val: yearRoot }
+        ];
+
+        let groupedHtml = "";
+        let used = new Set();
+
+        data.forEach((item, i) => {
+            if (used.has(item.label)) return;
+            let group = [item.label];
+            for (let j = i + 1; j < data.length; j++) {
+                if (item.val === data[j].val) {
+                    group.push(data[j].label);
+                    used.add(data[j].label);
+                }
+            }
+            groupedHtml += `
+                <div class="reduction-card">
+                    <span class="highlight">${group.join("and ")} = ${item.val}</span>
+                    <span class="meaning-text">${NUM_MEANINGS[item.val]}</span>
+                </div>
+            `;
+        });
+
+        document.getElementById("calendar-results").innerHTML = `
+            <div class="reduction-card" style="border-left: 3px solid var(--mystic-purple); text-align:center;">
+                <div style="font-size: 1.1rem; margin-bottom:5px;"></div>
+                <span class="highlight" style="font-size:1.2rem;">Arcana ${arcanaDay}: ${info[0]}</span>
+                <span class="meaning-text">"${info[1]}"</span>
+            </div>
+            ${groupedHtml}
+        `;
+    }
+
+    function getLetterSum(text) {
+        const values = {
+            'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 
+            'I': 9, 'J': 10, 'K': 11, 'L': 12, 'M': 13, 'N': 14, 'O': 15, 
+            'P': 16, 'Q': 17, 'R': 18, 'S': 19, 'T': 20, 'U': 21, 'V': 22, 
+            'W': 23, 'X': 24, 'Y': 25, 'Z': 26 
+        };
+        let sum = 0;
+        for (let c of text.toUpperCase()) { if (values[c]) sum += values[c]; }
+        return sum;
+    }
+
+    function calculateLetters() {
+        const inputString = document.getElementById("inputString").value;
+        if (!inputString) return;
+
+        let decent = "", add = "", seen = new Set();
+        for (let c of inputString.toUpperCase()) {
+            if (c.match(/[A-Z]/)) {
+                if (!seen.has(c)) { decent += c; seen.add(c); }
+                else { add += c; }
+            }
+        }
+
+        const results = [
+            { label: "Your Life Path ", val: linguisticReduce(getLetterSum(decent)) },
+            { label: "Your Life Way ", val: linguisticReduce(getLetterSum(add)) },
+            { label: "Your Life Destiny ", val: linguisticReduce(getLetterSum(inputString)) }
+        ];
+
+        let html = "", used = new Set();
+        results.forEach((item, i) => {
+            if (used.has(item.label) || item.val === 0) return;
+            let group = [item.label];
+            for (let j = i + 1; j < results.length; j++) {
+                if (item.val === results[j].val) {
+                    group.push(results[j].label);
+                    used.add(results[j].label);
+                }
+            }
+            html += `
+                <div class="reduction-card">
+                    <span class="highlight">${group.join("and ")} = ${item.val}</span>
+                    <span class="meaning-text">${NUM_MEANINGS[item.val]}</span>
+                </div>
+            `;
+        });
+        document.getElementById('letter-results').innerHTML = html || "No vibrations detected.";
+    }
+</script>
+
+</body>
+</html>
